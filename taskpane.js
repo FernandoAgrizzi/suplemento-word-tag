@@ -8,23 +8,30 @@ Office.onReady((info) => {
     }
 });
 
-// 1. Busca e mapeia as tags <<TAG>> via Word.run()
+// 1. Lê o texto do documento e mapeia as tags <<TAG>> via Regex Nativo do JS
 async function mapearTags() {
     exibirStatus("Mapeando tags no documento...", "info");
 
     try {
         await Word.run(async (contexto) => {
-            // Sintaxe ajustada do padrão wildcard para o Word Online
-            const busca = contexto.document.body.search("<<*>>", { matchWildcards: true });
-            busca.load("text");
+            // Obtém o texto completo do corpo do documento
+            const corpo = contexto.document.body;
+            corpo.load("text");
             await contexto.sync();
 
+            const textoCompleto = corpo.text || "";
+
+            // Expressão Regular para capturar qualquer valor entre << e >>
+            const regexTags = /<<([^>]+)>>/g;
             const conjunto = new Set();
-            for (let i = 0; i < busca.items.length; i++) {
-                // Remove os delimitadores << e >> mantendo apenas o nome do campo
-                const tagLimpa = busca.items[i].text.replace(/^<</, "").replace(/>>$/, "").trim();
-                if (tagLimpa) {
-                    conjunto.add(tagLimpa);
+            let correspondencia;
+
+            while ((correspondencia = regexTags.exec(textoCompleto)) !== null) {
+                if (correspondencia[1]) {
+                    const tagLimpa = correspondencia[1].trim();
+                    if (tagLimpa) {
+                        conjunto.add(tagLimpa);
+                    }
                 }
             }
 
@@ -56,7 +63,9 @@ async function preencherDocumento() {
     try {
         await Word.run(async (contexto) => {
             for (const [tag, valor] of Object.entries(valores)) {
-                const busca = contexto.document.body.search(`<<${tag}>>`, { matchCase: false });
+                // Busca exatamente o texto da tag específica <<TAG>> sem usar wildcards
+                const termoBusca = `<<${tag}>>`;
+                const busca = contexto.document.body.search(termoBusca, { matchCase: false });
                 busca.load("items");
                 await contexto.sync();
 
