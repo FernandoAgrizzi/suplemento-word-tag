@@ -82,16 +82,16 @@ async function preencherDocumento() {
             await contexto.sync();
         });
 
-        exibirStatus("Documento preenchido e salvo automaticamente no OneDrive!", "sucesso");
+        exibirStatus("Documento preenchido e salvo no OneDrive!", "sucesso");
     } catch (erro) {
         console.error("Erro ao preencher:", erro);
         exibirStatus("Erro ao preencher o documento: " + erro.message, "erro");
     }
 }
 
-// 3. Processa e baixa um novo arquivo em PDF sem alterar a matriz original no Word
+// 3. Gera e baixa o PDF oficial usando a API Nativa da Microsoft, sem danificar a matriz
 async function gerarEBaixarPDF() {
-    exibirStatus("Gerando novo documento para download em PDF...", "info");
+    exibirStatus("Preenchendo documento para exportação...", "info");
 
     const valores = {};
     document.querySelectorAll("#meuFormulario input").forEach(input => {
@@ -99,41 +99,106 @@ async function gerarEBaixarPDF() {
     });
 
     try {
+        // Passo A: Preenche o documento no Word
         await Word.run(async (contexto) => {
-            const paragrafos = contexto.document.body.paragraphs;
-            paragrafos.load("text");
-            await contexto.sync();
+            for (const [tag, valor] of Object.entries(valores)) {
+                if (valor) {
+                    const termoBusca = `<<${tag}>>`;
+                    const busca = contexto.document.body.search(termoBusca, { matchCase: false });
+                    busca.load("items");
+                    await contexto.sync();
 
-            let conteudoHTML = "<html><head><title>Documento Preenchido</title><style>body{font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#333;}</style></head><body>";
-
-            for (let i = 0; i < paragrafos.items.length; i++) {
-                let texto = paragrafos.items[i].text || "";
-                
-                // Aplica a substituição dos campos apenas na memória de exportação
-                for (const [tag, valor] of Object.entries(valores)) {
-                    const regex = new RegExp(`<<${tag}>>`, 'gi');
-                    texto = texto.replace(regex, valor);
+                    busca.items.forEach(item => {
+                        item.insertText(valor, Word.InsertLocation.replace);
+                    });
                 }
-                
-                conteudoHTML += `<p>${texto}</p>`;
             }
-
-            conteudoHTML += "</body></html>";
-
-            // Abre a janela temporária de impressão/PDF sem afetar o Word Online
-            const janelaDownload = window.open("", "_blank");
-            janelaDownload.document.write(conteudoHTML);
-            janelaDownload.document.close();
-            
-            setTimeout(() => {
-                janelaDownload.print();
-                exibirStatus("Caixa de diálogo aberta. Selecione 'Salvar como PDF' para baixar.", "sucesso");
-            }, 500);
+            await contexto.sync();
         });
+
+        exibirStatus("Gerando PDF oficial via motor da Microsoft...", "info");
+
+        // Passo B: Pega o arquivo PDF compilado nativamente
+        const pdfBlob = await obterPdfBlobNativo();
+
+        // Passo C: Dispara o download automático no computador
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Contrato_Preenchido.pdf";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        exibirStatus("Restaurando modelo original no Word...", "info");
+
+        // Passo D: Desfaz as alterações trazendo as tags <<TAG>> de volta
+        await Word.run(async (contexto) => {
+            for (const [tag, valor] of Object.entries(valores)) {
+                if (valor) {
+                    const busca = contexto.document.body.search(valor, { matchCase: false });
+                    busca.load("items");
+                    await contexto.sync();
+
+                    busca.items.forEach(item => {
+                        item.insertText(`<<${tag}>>`, Word.InsertLocation.replace);
+                    });
+                }
+            }
+            await contexto.sync();
+        });
+
+        exibirStatus("PDF baixado com sucesso! Modelo original preservado.", "sucesso");
+
     } catch (erro) {
-        console.error("Erro ao processar PDF:", erro);
-        exibirStatus("Erro ao processar PDF: " + erro.message, "erro");
+        console.error("Erro ao gerar PDF:", erro);
+        exibirStatus("Erro ao processar PDF nativo: " + erro.message, "erro");
     }
+}
+
+// Função utilitária para extrair os blocos binários do PDF nativo do Office
+function obterPdfBlobNativo() {
+    return new Promise((resolve, reject) => {
+        Office.context.document.getFileAsync(
+            Office.FileType.Pdf,
+            { sliceSize: 65536 },
+            (resultado) => {
+                if (resultado.status === Office.AsyncResultStatus.Failed) {
+                    reject(new Error(resultado.error.message));
+                    return;
+                }
+
+                const arquivo = resultado.value;
+                const contagemSlices = arquivo.sliceCount;
+                const slicesCarregados = [];
+                let slicesLidos = 0;
+
+                function lerSlice(index) {
+                    arquivo.getSliceAsync(index, (resultadoSlice) => {
+                        if (resultadoSlice.status === Office.AsyncResultStatus.Failed) {
+                            arquivo.closeAsync();
+                            reject(new Error(resultadoSlice.error.message));
+                            return;
+                        }
+
+                        slicesCarregados[index] = new Uint8Array(resultadoSlice.value.data);
+                        slicesLidos++;
+
+                        if (slicesLidos === contagemSlices) {
+                            arquivo.closeAsync();
+                            const blob = new Blob(slicesCarregados, { type: "application/pdf" });
+                            resolve(blob);
+                        } else {
+                            lerSlice(slicesLidos);
+                        }
+                    });
+                }
+
+                lerSlice(0);
+            }
+        );
+    });
 }
 
 function gerarFormulario(tags) {
