@@ -2,7 +2,7 @@ let tagsEncontradas = [];
 
 // Conecta o suplemento com a API oficial do Office
 Office.onReady((info) => {
-    console.log("=== Office.onReady Disparado ===");
+    console.log("=== Office.onReady Disparado 1.1.1 ===");
     if (info.host === Office.HostType.Word) {
         document.getElementById("btnMapear").onclick = mapearTags;
         document.getElementById("btnPreencher").onclick = preencherDocumento;
