@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp 
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:type="TaskPaneApp">
+  
+  <Id>f47ac10b-58cc-4372-a567-0e02b2c3d479</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>MeuGeradorContratos</ProviderName>
+  <DefaultLocale>pt-BR</DefaultLocale>
+  <DisplayName DefaultValue="Gerador de Contratos" />
+  <Description DefaultValue="Mapeia e preenche tags automaticamente no Word Online." />
+  <IconUrl DefaultValue="https://localhost:3000/icon.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/icon.png"/>
+
+  <Hosts>
+    <Host Name="Document" />
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+</OfficeApp>

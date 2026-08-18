@@ -1,0 +1,12 @@
+{
+  "name": "suplemento-word-local",
+  "version": "1.0.0",
+  "description": "Suplemento do Word Online para substituicao de tags",
+  "main": "server.js",
+  "scripts": {
+    "start": "npx http-server -S -p 3000 --cors"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
