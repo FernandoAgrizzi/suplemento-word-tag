@@ -3,53 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Gerador de Contratos</title>
+    <!-- API Oficial do Office -->
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 12px;
-            color: #333;
-            margin: 0;
-            background-color: #ffffff;
-        }
-        h2 { font-size: 16px; margin: 0 0 8px 0; color: #0078d4; }
-        p { font-size: 11px; color: #555; margin: 0 0 12px 0; }
-        .grupo-campo { margin-bottom: 10px; display: flex; flex-direction: column; }
-        label { font-size: 11px; font-weight: 600; margin-bottom: 3px; }
-        input[type="text"] {
-            padding: 6px 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            font-size: 12px;
-            outline: none;
-        }
-        input[type="text"]:focus { border-color: #0078d4; }
-        button {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
-            font-size: 12px;
-        }
-        .btn-primario { background-color: #0078d4; color: white; }
-        .btn-primario:hover { background-color: #005a9e; }
-        .btn-sucesso { background-color: #107c41; color: white; margin-top: 12px; }
-        .btn-sucesso:hover { background-color: #0b582e; }
-        .btn-recarregar { background-color: #605e5c; color: white; margin-top: 8px; }
-        .btn-recarregar:hover { background-color: #484644; }
-        .status {
-            margin-top: 12px;
-            padding: 8px;
-            font-size: 11px;
-            border-radius: 3px;
-            display: none;
-        }
-        .status.info { background-color: #f0f6ff; color: #0078d4; display: block; }
-        .status.sucesso { background-color: #dff6dd; color: #107c41; display: block; }
-        .status.erro { background-color: #fde7e9; color: #a80000; display: block; }
-    </style>
+    <!-- Estilo Externo -->
+    <link rel="stylesheet" href="taskpane.css">
 </head>
 <body>
 
@@ -59,15 +16,17 @@
     <button id="btnMapear" class="btn-primario">1. Mapear Tags do Documento</button>
 
     <div id="areaFormulario" style="display: none; margin-top: 12px;">
-        <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 12px;"/>
+        <hr class="divisor"/>
         <form id="meuFormulario"></form>
-        <button id="btnPreencher" class="btn-sucesso">2. Preencher no Documento</button>
+        <button id="btnPreencher" class="btn-sucesso">2. Preencher no Documento Original</button>
+        <button id="btnGerarPdf" class="btn-pdf">3. Gerar Novo Documento em PDF</button>
     </div>
 
     <button id="btnReload" class="btn-recarregar">🔄 Recarregar Painel (Dev)</button>
 
     <div id="status" class="status"></div>
 
+    <!-- Script Externo -->
     <script src="taskpane.js"></script>
 </body>
 </html>

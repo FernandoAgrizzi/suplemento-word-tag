@@ -1,15 +1,14 @@
 let tagsEncontradas = [];
 
-// Garante a conexão do Suplemento com a API nativa do Word
+// Conecta o suplemento com a API oficial do Office
 Office.onReady((info) => {
     console.log("=== Office.onReady Disparado ===");
-    console.log("Host:", info.host);
-
     if (info.host === Office.HostType.Word) {
         document.getElementById("btnMapear").onclick = mapearTags;
         document.getElementById("btnPreencher").onclick = preencherDocumento;
+        document.getElementById("btnGerarPdf").onclick = gerarEBaixarPDF;
         
-        // Evento para recarregar o script e a tela sem remover o suplemento
+        // Botão Dev para recarregar o script sem remover o suplemento
         document.getElementById("btnReload").onclick = () => {
             console.log("Recarregando o painel do suplemento...");
             window.location.reload(true);
@@ -17,26 +16,17 @@ Office.onReady((info) => {
     }
 });
 
-// 1. Mapeia as tags <<TAG>> no Word de forma 100% compatível
+// 1. Mapeia as tags <<TAG>> no Word
 async function mapearTags() {
-    console.log("[1/4] Iniciando leitura de tags...");
     exibirStatus("Mapeando tags no documento...", "info");
 
     try {
         await Word.run(async (contexto) => {
-            console.log("[2/4] Solicitando corpo do documento...");
             const corpo = contexto.document.body;
-            
-            // Carrega a propriedade 'text' da API Office.js
             corpo.load("text");
-            
-            console.log("[3/4] Sincronizando com o Word Online...");
             await contexto.sync();
 
             const textoCompleto = corpo.text || "";
-            console.log("[Texto Lido]:", textoCompleto.substring(0, 100) + "...");
-
-            // Expressão regular para capturar valores dentro de << e >>
             const regexTags = /<<([^>]+)>>/g;
             const conjunto = new Set();
             let correspondencia;
@@ -51,7 +41,6 @@ async function mapearTags() {
             }
 
             tagsEncontradas = Array.from(conjunto);
-            console.log("[4/4] Tags encontradas:", tagsEncontradas);
 
             if (tagsEncontradas.length === 0) {
                 exibirStatus("Nenhuma tag <<TAG>> encontrada no documento.", "erro");
@@ -68,7 +57,7 @@ async function mapearTags() {
     }
 }
 
-// 2. Substitui os valores informados pelo usuário
+// 2. Preenche os valores alterando o documento original do Word
 async function preencherDocumento() {
     exibirStatus("Substituindo tags no documento...", "info");
 
@@ -93,10 +82,57 @@ async function preencherDocumento() {
             await contexto.sync();
         });
 
-        exibirStatus("Documento preenchido e salvo automaticamente!", "sucesso");
+        exibirStatus("Documento preenchido e salvo automaticamente no OneDrive!", "sucesso");
     } catch (erro) {
         console.error("Erro ao preencher:", erro);
         exibirStatus("Erro ao preencher o documento: " + erro.message, "erro");
+    }
+}
+
+// 3. Processa e baixa um novo arquivo em PDF sem alterar a matriz original no Word
+async function gerarEBaixarPDF() {
+    exibirStatus("Gerando novo documento para download em PDF...", "info");
+
+    const valores = {};
+    document.querySelectorAll("#meuFormulario input").forEach(input => {
+        valores[input.getAttribute("data-tag")] = input.value || "";
+    });
+
+    try {
+        await Word.run(async (contexto) => {
+            const paragrafos = contexto.document.body.paragraphs;
+            paragrafos.load("text");
+            await contexto.sync();
+
+            let conteudoHTML = "<html><head><title>Documento Preenchido</title><style>body{font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#333;}</style></head><body>";
+
+            for (let i = 0; i < paragrafos.items.length; i++) {
+                let texto = paragrafos.items[i].text || "";
+                
+                // Aplica a substituição dos campos apenas na memória de exportação
+                for (const [tag, valor] of Object.entries(valores)) {
+                    const regex = new RegExp(`<<${tag}>>`, 'gi');
+                    texto = texto.replace(regex, valor);
+                }
+                
+                conteudoHTML += `<p>${texto}</p>`;
+            }
+
+            conteudoHTML += "</body></html>";
+
+            // Abre a janela temporária de impressão/PDF sem afetar o Word Online
+            const janelaDownload = window.open("", "_blank");
+            janelaDownload.document.write(conteudoHTML);
+            janelaDownload.document.close();
+            
+            setTimeout(() => {
+                janelaDownload.print();
+                exibirStatus("Caixa de diálogo aberta. Selecione 'Salvar como PDF' para baixar.", "sucesso");
+            }, 500);
+        });
+    } catch (erro) {
+        console.error("Erro ao processar PDF:", erro);
+        exibirStatus("Erro ao processar PDF: " + erro.message, "erro");
     }
 }
 
