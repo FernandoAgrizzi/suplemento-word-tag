@@ -14,12 +14,14 @@ async function mapearTags() {
 
     try {
         await Word.run(async (contexto) => {
-            const busca = contexto.document.body.search("\<\<*\>\>", { matchWildcards: true });
+            // Sintaxe ajustada do padrão wildcard para o Word Online
+            const busca = contexto.document.body.search("<<*>>", { matchWildcards: true });
             busca.load("text");
             await contexto.sync();
 
             const conjunto = new Set();
             for (let i = 0; i < busca.items.length; i++) {
+                // Remove os delimitadores << e >> mantendo apenas o nome do campo
                 const tagLimpa = busca.items[i].text.replace(/^<</, "").replace(/>>$/, "").trim();
                 if (tagLimpa) {
                     conjunto.add(tagLimpa);
