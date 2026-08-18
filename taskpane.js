@@ -8,6 +8,12 @@ Office.onReady((info) => {
     if (info.host === Office.HostType.Word) {
         document.getElementById("btnMapear").onclick = mapearTags;
         document.getElementById("btnPreencher").onclick = preencherDocumento;
+        
+        // Evento para recarregar o script e a tela sem remover o suplemento
+        document.getElementById("btnReload").onclick = () => {
+            console.log("Recarregando o painel do suplemento...");
+            window.location.reload(true);
+        };
     }
 });
 
@@ -21,7 +27,7 @@ async function mapearTags() {
             console.log("[2/4] Solicitando corpo do documento...");
             const corpo = contexto.document.body;
             
-            // Método correto da API Office.js: carregar a propriedade 'text'
+            // Carrega a propriedade 'text' da API Office.js
             corpo.load("text");
             
             console.log("[3/4] Sincronizando com o Word Online...");
